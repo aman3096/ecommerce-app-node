@@ -157,7 +157,7 @@ exports.deleteProduct = (req, res, next) => {
         console.log("DESTROYED PRODUCT")
      })
      .catch(err => {
-        console.log("Error OCccureed")
+        console.log("Error Occurred")
         next(err);
      })
 

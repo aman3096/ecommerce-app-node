@@ -8,7 +8,7 @@ const deleteProduct = (btn) => {
             'csrf-token': csrf
         }
     }).then(result=>{
-        console.log(result);
+        console.log("Result printed");
     }).catch(error => {
         console.log(error);
     })
