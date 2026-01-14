@@ -1,8 +1,7 @@
-require('dotenv');
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
-const cors = require("cors");
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -14,7 +13,8 @@ const multer = require('multer');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
-const https = require('https');
+const RateLimit = require("express-rate-limit");
+const app = express();
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
@@ -23,12 +23,14 @@ const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
 
 
+const limiter = RateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20000
+});
 
-const MONGODB_REVISED_URI = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@cluster0.ds1gfe6.mongodb.net/${process.env.MONGODB_COLLECTION}?w=majority`
 
-const app = express();
 const store = new MongoDBStore({
-  uri: MONGODB_REVISED_URI,
+  uri: process.env.MONGODB_URI,
   collection: 'sessions'
 });
 const csrfProtection = csrf();
@@ -52,7 +54,7 @@ const fileFilter = (req, file, cb) => {
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
-
+app.use(limiter);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -90,7 +92,6 @@ app.use((req, res, next) => {
 
 
 app.use((error, req, res, next) => {
-  // res.redirect('/500');
   res.status(500).render('500',{
     pageTitle: 'Error!',
     path: '/500',
@@ -106,25 +107,19 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined', { stream: accessLogStream }))
 
-
-
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
 
-app.use('/500', errorController.get500)
+app.get('/500', errorController.get500);
 app.use(errorController.get404);
 
 mongoose
-  .connect(
-    MONGODB_REVISED_URI, { useNewUrlParser: true }
-  )
+  .connect(process.env.MONGODB_URI, {useUnifiedTopology: true, useNewUrlParser: true })
   .then(result => {
-    // https.createServer({ key: privateKey, cert: certificate },app).listen(process.env.APP_PORT|| 4000);
-    app.createServer(process.env.PORT || 4000);
+    app.listen(process.env.PORT || 4000);
+    
   })
   .catch(err => {
     console.log(err);
   });
-
-
