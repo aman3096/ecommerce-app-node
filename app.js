@@ -23,9 +23,7 @@ const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
 
 
-const corsOptions = {
-  origin: "http://localhost:3000" // Replace with your actual front-end domain
-};
+
 const MONGODB_REVISED_URI = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@cluster0.ds1gfe6.mongodb.net/${process.env.MONGODB_COLLECTION}?w=majority`
 
 const app = express();
@@ -34,8 +32,6 @@ const store = new MongoDBStore({
   collection: 'sessions'
 });
 const csrfProtection = csrf();
-const privateKey = fs.readFileSync('server.key');
-const certificate = fs.readFileSync('server.cert');
 
 const fileStorage = multer.diskStorage({
   destination: (req,file, cb) =>{
@@ -56,7 +52,6 @@ const fileFilter = (req, file, cb) => {
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
-app.use(cors(corsOptions));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
