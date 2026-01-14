@@ -10,12 +10,9 @@ Contains the following features
 8. file upload using multer
 9. API pagination in mongoose
 10. async requests
-Database used:
-mongodb
-Email service used
-Brevo free tier: https://www.brevo.com/
-Deployment service used
-Render: https://render.com/
+
+Database used: mongodb
+
 Features under development
 1. Payment module integration (stripe)
 2. GraphQL
