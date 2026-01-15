@@ -28,7 +28,7 @@ exports.getProducts = (req, res, next) => {
         nextPage: page + 1,
         previousPage: page -1,
         hasNextPage: page* constants.ITEMS_PER_PAGE < totalItems,
-        hasPreviousPage: page > 1,
+        hasPreviousPage: page < 1,
         lastPage: Math.ceil( totalItems / constants.ITEMS_PER_PAGE)
       });
     })
@@ -100,6 +100,7 @@ exports.getIndex = (req, res, next) => {
 exports.getCart = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
+    .execPopulate()
     .then(user => {
       const products = user.cart.items;
       res.render('shop/cart', {
@@ -136,6 +137,7 @@ exports.postCartDeleteProduct = (req, res, next) => {
 exports.getCheckout = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
+    .execPopulate()
     .then(user => {
       const products = user.cart.items;
       let total = 0;
@@ -155,6 +157,8 @@ exports.getCheckout = (req, res, next) => {
 exports.postOrder = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
+    .execPopulate()
+
     .then(user => {
       const products = user.cart.items.map(i => {
         return { quantity: i.quantity, product: { ...i.productId._doc } };
@@ -190,7 +194,7 @@ exports.getOrders = (req, res, next) => {
 };
 
 exports.getInvoices = (req, res, next) => {
-  const orderId = req.params.orderId;
+    const orderId = req.params.orderId;
   const invoiceName = "invoice-" + orderId + ".pdf";
   const invoicePath = path.join('data', 'invoices', invoiceName);
   Order.findById(orderId).then( order => {
@@ -200,7 +204,7 @@ exports.getInvoices = (req, res, next) => {
     if(order.user.userId.toString() !== req.user._id.toString()) {
       return new Error('Unauthorized');
     }
-    // fs.readFile(invoicePath, (err, data)=>{
+    //     fs.readFile(invoicePath, (err, data)=>{
     //     if(err){
     //       return next(err);
     //     }
@@ -208,11 +212,10 @@ exports.getInvoices = (req, res, next) => {
     //     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
     //     res.send(data);
     // });
-    //recommende way for bigger files - streaming 
+    //recommended way for bigger files - streaming 
     // const file = fs.createReadStream(invoicePath);
-    // res.setHeader("Content-Type", "application/pdf")
-    // res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
-    // file.pipe(res);
+    res.setHeader("Content-Type", "application/pdf")
+    res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
 
     const pdfDocument = new PDFDocument();
     pdfDocument.pipe(fs.createWriteStream(invoicePath));
@@ -231,6 +234,7 @@ exports.getInvoices = (req, res, next) => {
     })
     pdfDocument.text(`Total Price: ${totalPrice}`)
     pdfDocument.end();
+
 
   }).catch(err=>next(err));
 

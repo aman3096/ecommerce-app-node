@@ -83,7 +83,6 @@ exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imag;
   const image = req.file
   const updatedDesc = req.body.description;
 
@@ -115,14 +114,14 @@ exports.postEditProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-    const page = +req.params.page || 1;
+    const page = +req.query.page || 1;
 
     let totalItems; 
-    Product.find({ userId: req.user._id})
+    Product.find()
     .countDocuments()
     .then(numProducts => {
       totalItems = numProducts
-      return Product.find()
+      return Product.find({})
         .skip(page-1)
         .limit(constants.ITEMS_PER_PAGE)
     })
