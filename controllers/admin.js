@@ -134,7 +134,7 @@ exports.getProducts = (req, res, next) => {
         previousPage: page - 1,
         nextPage: page + 1,
         hasNextPage: constants.ITEMS_PER_PAGE * page < totalItems,
-        hasPreviousPage: page<1,
+        hasPreviousPage: page < 1,
         lastPage: Math.ceil(totalItems / constants.ITEMS_PER_PAGE)
       });
     })
@@ -156,8 +156,9 @@ exports.deleteProduct = (req, res, next) => {
         console.log("DESTROYED PRODUCT")
      })
      .catch(err => {
-        console.log("Error Occurred")
-        next(err);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
      })
 
   }).then(() => {
@@ -165,7 +166,9 @@ exports.deleteProduct = (req, res, next) => {
       res.status(200).json({ message: 'Success' });
     })
     .catch(err => {
-        res.status(500).json({ message: 'Deleting product failed'});
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 

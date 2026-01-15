@@ -6,6 +6,7 @@ const Order = require('../models/order');
 
 const PDFDocument = require("pdfkit");
 const constants = require("../util/constants");
+const { ObjectID } = require('mongodb');
 
 exports.getProducts = (req, res, next) => {
   const page = +req.query.page || 1
@@ -27,7 +28,7 @@ exports.getProducts = (req, res, next) => {
         currentPage: page,
         nextPage: page + 1,
         previousPage: page -1,
-        hasNextPage: page* constants.ITEMS_PER_PAGE < totalItems,
+        hasNextPage: constants.ITEMS_PER_PAGE * page < totalItems,
         hasPreviousPage: page < 1,
         lastPage: Math.ceil( totalItems / constants.ITEMS_PER_PAGE)
       });
@@ -62,7 +63,11 @@ exports.getProduct = (req, res, next) => {
         
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.getIndex = (req, res, next) => {
@@ -109,18 +114,26 @@ exports.getCart = (req, res, next) => {
         products: products
       });
     })
-    .catch(err => console.log(err));
+    .catch(err =>{ 
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postCart = (req, res, next) => {
-  const prodId = req.body.productId;
+  const prodId = ObjectID(req.body.productId);
   Product.findById(prodId)
     .then(product => {
       return req.user.addToCart(product);
     })
     .then(result => {
-      console.log(result);
+      console.log("created cart");
       res.redirect('/cart');
+    }).catch(err=> {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
@@ -131,7 +144,11 @@ exports.postCartDeleteProduct = (req, res, next) => {
     .then(result => {
       res.redirect('/cart');
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.getCheckout = (req, res, next) => {
@@ -151,7 +168,11 @@ exports.getCheckout = (req, res, next) => {
         totalSum: total 
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 }
 
 exports.postOrder = (req, res, next) => {
@@ -178,7 +199,11 @@ exports.postOrder = (req, res, next) => {
     .then(() => {
       res.redirect('/orders');
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 };
 
 exports.getOrders = (req, res, next) => {
@@ -190,7 +215,11 @@ exports.getOrders = (req, res, next) => {
         orders: orders
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.getInvoices = (req, res, next) => {
@@ -236,6 +265,10 @@ exports.getInvoices = (req, res, next) => {
     pdfDocument.end();
 
 
-  }).catch(err=>next(err));
+  }).catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+  });
 
 }
