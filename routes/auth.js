@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { check, body } =require('express-validator');
+const { check, body, escape } =require('express-validator');
 
 const authController = require('../controllers/auth');
 const User = require('../models/user');
@@ -22,9 +22,9 @@ router.post('/login',
             })
         })
         .normalizeEmail(),
-        body('password', 'Please use password with only numbers and text at least 5 characters long')
-        .isLength({ min: 5 })
-        .isAlphanumeric()
+        body('password', 'Please use password with only numbers text and special characters at least 8 characters long')
+        .isLength({ min: 8 })
+        .escape()
         .trim()
     ]
     , authController.postLogin);
@@ -35,10 +35,6 @@ router.post('/signup',
         .isEmail()
         .withMessage('Please enter a valid email')
         .custom((value, {req})=>{
-            // if(value == 'test@test.com') {
-            //     throw new Error("This Email address is Forbiden");
-            // }
-            // return true
             return User.findOne({ email: value }).then(userDoc=>{
                 if(userDoc) {
                     return Promise.reject(
@@ -47,9 +43,9 @@ router.post('/signup',
             })
         })
         .normalizeEmail(),
-        body('password', 'Please use password with only numbers and text at least 5 characters long')
-        .isLength({ min: 5 })
-        .isAlphanumeric()
+        body('password', 'Please use password with only numbers text and special characters at least 8 characters long')
+        .isLength({ min: 8 })
+        .escape()
         .trim(),
         body('confirmPassword')
         .custom((value, { req }) =>{
