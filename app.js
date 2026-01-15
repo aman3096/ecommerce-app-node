@@ -29,10 +29,6 @@ const limiter = RateLimit({
 });
 
 
-const store = new MongoDBStore({
-  uri: process.env.MONGODB_URI,
-  collection: 'sessions'
-});
 const csrfProtection = csrf();
 
 const fileStorage = multer.diskStorage({
@@ -61,6 +57,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use("/images", express.static(path.join(__dirname, 'images')));
 
 app.use(express.json());
+
+const store = new MongoDBStore({
+  uri: process.env.MONGODB_URI,
+  collection: 'sessions'
+});
+
 app.use(
   session({
     secret: process.env.MY_SECRET,
@@ -71,6 +73,14 @@ app.use(
 );
 app.use(csrfProtection);
 app.use(flash());
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, 'access.log'),
+  { flags: 'a'}
+)
+
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined', { stream: accessLogStream }))
 
 app.use((req, res, next) => {
   res.locals.isAuthenticated = req.session.isLoggedIn;
@@ -90,32 +100,14 @@ app.use((req, res, next) => {
     .catch(err => console.log(err));
 });
 
-
-app.use((error, req, res, next) => {
-  res.status(500).render('500',{
-    pageTitle: 'Error!',
-    path: '/500',
-    isAuthenticated: req.session.isLoggedIn
-  })
-});
-const accessLogStream = fs.createWriteStream(
-  path.join(__dirname, 'access.log'),
-  { flags: 'a'}
-)
-
-app.use(helmet());
-app.use(compression());
-app.use(morgan('combined', { stream: accessLogStream }))
-
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
 
 app.get('/500', errorController.get500);
-app.use(errorController.get404);
 
 mongoose
-  .connect(process.env.MONGODB_URI, {useUnifiedTopology: true, useNewUrlParser: true })
+  .connect(process.env.MONGODB_URI)
   .then(result => {
     app.listen(process.env.PORT || 4000);
     
@@ -123,3 +115,11 @@ mongoose
   .catch(err => {
     console.log(err);
   });
+app.use((error, req, res, next) => {
+  res.status(500).render('500',{
+    pageTitle: 'Error!',
+    path: '/500',
+    isAuthenticated: req.session.isLoggedIn
+  })
+});
+app.use(errorController.get404);

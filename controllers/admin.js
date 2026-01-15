@@ -115,8 +115,8 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
     const page = +req.query.page || 1;
-
     let totalItems; 
+    
     Product.find()
     .countDocuments()
     .then(numProducts => {
@@ -131,10 +131,10 @@ exports.getProducts = (req, res, next) => {
         pageTitle: 'Admin Products',
         path: '/admin/products',
         currentPage: page,
-        previousPage: page - 1,
         nextPage: page + 1,
-        hasNextPage: constants.ITEMS_PER_PAGE * page < totalItems,
-        hasPreviousPage: page < 1,
+        previousPage: page - 1,
+        hasNextPage: (constants.ITEMS_PER_PAGE * page) < totalItems,
+        hasPreviousPage: page > 1,
         lastPage: Math.ceil(totalItems / constants.ITEMS_PER_PAGE)
       });
     })

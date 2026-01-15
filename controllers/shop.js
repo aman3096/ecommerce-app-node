@@ -27,9 +27,9 @@ exports.getProducts = (req, res, next) => {
         path: '/products',
         currentPage: page,
         nextPage: page + 1,
-        previousPage: page -1,
-        hasNextPage: constants.ITEMS_PER_PAGE * page < totalItems,
-        hasPreviousPage: page < 1,
+        previousPage: page - 1,
+        hasNextPage: (constants.ITEMS_PER_PAGE * page) < totalItems,
+        hasPreviousPage: page > 1,
         lastPage: Math.ceil( totalItems / constants.ITEMS_PER_PAGE)
       });
     })
@@ -105,7 +105,6 @@ exports.getIndex = (req, res, next) => {
 exports.getCart = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
-    .execPopulate()
     .then(user => {
       const products = user.cart.items;
       res.render('shop/cart', {
@@ -154,7 +153,6 @@ exports.postCartDeleteProduct = (req, res, next) => {
 exports.getCheckout = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
-    .execPopulate()
     .then(user => {
       const products = user.cart.items;
       let total = 0;
@@ -178,8 +176,6 @@ exports.getCheckout = (req, res, next) => {
 exports.postOrder = (req, res, next) => {
   req.user
     .populate('cart.items.productId')
-    .execPopulate()
-
     .then(user => {
       const products = user.cart.items.map(i => {
         return { quantity: i.quantity, product: { ...i.productId._doc } };
@@ -224,6 +220,10 @@ exports.getOrders = (req, res, next) => {
 
 exports.getInvoices = (req, res, next) => {
     const orderId = req.params.orderId;
+  // Validate orderId to prevent path traversal
+  if (!orderId || !/^[a-zA-Z0-9]+$/.test(orderId)) {
+    return next(new Error('Invalid order ID'));
+  }
   const invoiceName = "invoice-" + orderId + ".pdf";
   const invoicePath = path.join('data', 'invoices', invoiceName);
   Order.findById(orderId).then( order => {
