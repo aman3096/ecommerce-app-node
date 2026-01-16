@@ -14,6 +14,5 @@ Contains the following features
 Database used: mongodb
 
 Features under development
-1. Payment module integration (stripe)
-2. GraphQL
-3. Websockets 
+1. GraphQL
+2. Websockets 
