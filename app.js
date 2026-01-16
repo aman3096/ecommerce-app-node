@@ -15,6 +15,9 @@ const compression = require('compression');
 const morgan = require('morgan');
 const RateLimit = require("express-rate-limit");
 const app = express();
+const graphqlHttp = require('express-graphql').graphqlHTTP;
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
@@ -62,6 +65,11 @@ const store = new MongoDBStore({
   uri: process.env.MONGODB_URI,
   collection: 'sessions'
 });
+
+app.use('/graphql', graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver
+}));
 
 app.use(
   session({
