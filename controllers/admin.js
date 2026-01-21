@@ -145,6 +145,8 @@ exports.getProducts = (req, res, next) => {
     });
 };
 
+
+
 exports.deleteProduct = (req, res, next) => {
   const prodId = req.params.productId;
   Product.findById(prodId).then( product => {

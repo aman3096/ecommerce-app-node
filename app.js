@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
+const constants = require('./util/constants');
 const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
@@ -18,6 +19,7 @@ const app = express();
 const graphqlHttp = require('express-graphql').graphqlHTTP;
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
+const Product = require('./models/product');
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
@@ -29,6 +31,39 @@ const authRoutes = require('./routes/auth');
 const limiter = RateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 20000
+});
+
+app.get('/api/v2/products', (req, res, next) => {
+    const page = +req.query.page || 1;
+    let totalItems; 
+
+    Product.find()
+    .countDocuments()
+    .then(numProducts => {
+      totalItems = numProducts
+      return Product.find({})
+        .skip(page-1)
+        .limit(constants.ITEMS_PER_PAGE)
+    })
+    .then(products => {
+      const data = {
+        prods: products,
+        pageTitle: 'Admin Products',
+        path: '/admin/products',
+        currentPage: page,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        hasNextPage: (constants.ITEMS_PER_PAGE * page) < totalItems,
+        hasPreviousPage: page > 1,
+        lastPage: Math.ceil(totalItems / constants.ITEMS_PER_PAGE)
+      }
+      res.send(data);
+    })
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
 });
 
 
@@ -63,7 +98,7 @@ app.use(express.json());
 
 const store = new MongoDBStore({
   uri: process.env.MONGODB_URI,
-  collection: 'sessions'
+  // collection: 'sessions'
 });
 
 app.use('/graphql', graphqlHttp({
@@ -91,16 +126,16 @@ app.use(compression());
 app.use(morgan('combined', { stream: accessLogStream }))
 
 app.use((req, res, next) => {
-  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.isAuthenticated = req?.session.isLoggedIn || true;
   res.locals.csrfToken = req.csrfToken();
   next();
 });
 
 app.use((req, res, next) => {
-  if (!req.session.user) {
+  if (!req?.session.user) {
     return next();
   }
-  User.findById(req.session.user._id)
+  User.findById(req?.session.user._id)
     .then(user => {
       req.user = user;
       next();
@@ -127,7 +162,7 @@ app.use((error, req, res, next) => {
   res.status(500).render('500',{
     pageTitle: 'Error!',
     path: '/500',
-    isAuthenticated: req.session.isLoggedIn
+    isAuthenticated: req?.session?.isLoggedIn || true
   })
 });
 app.use(errorController.get404);
