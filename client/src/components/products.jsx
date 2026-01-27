@@ -36,7 +36,7 @@ const Products = () => {
                           </p>
                       </div>
                       <div className="card__actions">
-                          <a href="/products/<%= product._id %>" className="btn">Details</a>
+                          <a href={`/products/${product._id}`} className="btn">Details</a>
                           {/* <% if (isAuthenticated) { %>
                               <%- include('../includes/add-to-cart.ejs', {product: product}) %>
                           <% } %> */}
