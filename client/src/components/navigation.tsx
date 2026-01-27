@@ -1,23 +1,24 @@
-import { Routes, Route } from 'react-router-dom'
-import Shop from './shop';
-import Products from './products';
-import Login from './login';
-import Signup from './signup';
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Navigation = () => {
-  return (
+    const [ isActive, setIsActive ] = useState(false);
+    const navigate = useNavigate();
+    return (
         <header className="main-header">
-            <div className="nav-half">
-                <div>Shop</div>
-                <div>Products</div>
-            </div>
-            <div className="nav-half">
-                <div>Login</div>
-                <div>Signup</div>
-
+            <nav className="nav-half left-nav-half">
+                <a className="nav-item" onClick = { ()=> navigate(`/shop`)}>Shop</a>
+                <a className="nav-item" onClick = { () => navigate(`/products`)}>Products</a>
+                <a className="nav-item" onClick = { () => navigate(`/cart`)}>Cart</a>
+                <a className="nav-item" onClick = { () => navigate(`/orders`)}>Orders</a>
+                <a className="nav-item" onClick = { () => navigate(`/add-product`)}>Add Product</a>
+                <a className="nav-item" onClick = { () => navigate(`/products`)}>Admin Products</a>
+            </nav>
+            <div className="nav-half right-nav-half">
+                <a className="nav-item" onClick = { ()=> navigate(`/login`)}>Login</a>
+                <a className="nav-item" onClick = { ()=> navigate(`/signup`)}>Signup</a>
             </div>
         </header>
-
   );
 }
 
