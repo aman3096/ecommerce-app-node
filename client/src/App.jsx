@@ -4,19 +4,59 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import Products from './components/products';
 import Login from './components/login';
 import Signup from './components/signup';
-import Shop from "./components/shop"
-import Navigation from './components/navigation'
+import Shop from "./components/shop";
+import Navigation from './components/navigation';
+import Cart from "./components/cart";
+import AddProduct from "./components/add-product";
+import AdminProducts from "./components/admin-products";
+import Orders from "./components/orders";
 
 function App() {
-
+  const AllRoutesMap = [
+    {
+      path: "products",
+      element: <Products/>,
+    },
+    {
+      path: "/",
+      element: <Shop />
+    },
+    {
+      path: "shop",
+      element: <Shop />
+    },
+    {
+      path: "login",
+      element: <Login />
+    },
+    {
+      path: "signup",
+      element: <Signup />
+    },
+    {
+      path: "cart",
+      element: <Cart />
+    },
+    {
+      path: "add-product",
+      element: <AddProduct />
+    },
+    {
+      path: "admin-products",
+      element: <AdminProducts />
+    },
+    {
+      path: "orders",
+      element: <Orders />
+    }
+  ]
   return (
     <BrowserRouter>
         <Navigation />
         <Routes>
-              <Route path="/products" element={<Products />} />
-              <Route path="/" element={<Shop />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+             {AllRoutesMap.map(routeMap => (
+                <Route key={routeMap.path} path={routeMap.path} element={routeMap.element} />
+             ))}
         </Routes>
     </BrowserRouter>
   )
