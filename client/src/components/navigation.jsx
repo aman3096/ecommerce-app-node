@@ -13,10 +13,6 @@ const Navigation = () => {
             name: 'Products'
         },
         {
-            path: '/products',
-            name: 'Products'
-        },
-        {
             path: '/cart',
             name: 'Cart',
         },
@@ -50,13 +46,13 @@ const Navigation = () => {
             <nav className="nav-half left-nav-half">
                 {LeftNavItems.map(leftNavItem=> {
                     return (
-                        <a className="nav-item" onClick={()=> navigate(leftNavItem.path)}>{leftNavItem.name}</a>
+                        <a className="nav-item" key={leftNavItem.name} onClick={()=> navigate(leftNavItem.path)}>{leftNavItem.name}</a>
                     )
                 })}
             </nav>
             <div className="nav-half right-nav-half">
                 {RightNavItems.map(item=> {
-                    return <a className="nav-item" onClick = {() => navigate(item.path)}>{item.name}</a>      
+                    return <a className="nav-item" key={item.name} onClick = {() => navigate(item.path)}>{item.name}</a>      
                 })}
             </div>
         </header>
