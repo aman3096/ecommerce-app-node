@@ -86,4 +86,47 @@ a:hover, a:focus, a:active {
 .grid {
   display: flex;
   justify-content: space-around;
+  background-color: bisque;
+}
+.btn {
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  text-decoration: none;
+  font: inherit;
+  border: 1px solid #00695c;
+  color: #00695c;
+  background: white;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn:hover,
+.btn:active {
+  background-color: #00695c;
+  color: white;
+}
+
+.btn.danger {
+  color: red;
+  border-color: red;
+}
+
+.btn.danger:hover,
+.btn.danger:active {
+  background: red;
+  color: white;
+}
+.centered {
+  text-align: center;
+  color:#4d4d4d;
+  margin: auto;
+  width: 50%;
+  border: 1px solid;
+}
+.image {
+  height: 20rem;
+}
+
+.image img {
+  height: 100%;
 }

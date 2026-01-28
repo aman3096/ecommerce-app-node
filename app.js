@@ -1,6 +1,7 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+const cors = require("cors");
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -24,6 +25,7 @@ const Product = require('./models/product');
 const errorController = require('./controllers/error');
 const User = require('./models/user');
 const adminRoutes = require('./routes/admin');
+const adminRoutesV2 = require('./routes/admin-v2');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
 
@@ -33,38 +35,14 @@ const limiter = RateLimit({
   max: 20000
 });
 
-app.get('/api/v2/products', (req, res, next) => {
-    const page = +req.query.page || 1;
-    let totalItems; 
+const corsOptions = {
+  origin: "http://localhost:4000" // Replace with your actual front-end domain
+};
 
-    Product.find()
-    .countDocuments()
-    .then(numProducts => {
-      totalItems = numProducts
-      return Product.find({})
-        .skip(page-1)
-        .limit(constants.ITEMS_PER_PAGE)
-    })
-    .then(products => {
-      const data = {
-        prods: products,
-        pageTitle: 'Admin Products',
-        path: '/admin/products',
-        currentPage: page,
-        nextPage: page + 1,
-        previousPage: page - 1,
-        hasNextPage: (constants.ITEMS_PER_PAGE * page) < totalItems,
-        hasPreviousPage: page > 1,
-        lastPage: Math.ceil(totalItems / constants.ITEMS_PER_PAGE)
-      }
-      res.send(data);
-    })
-    .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500
-        next(error);
-    });
-});
+app.use(cors(corsOptions));
+
+
+app.use('/api/', adminRoutesV2);
 
 
 const csrfProtection = csrf();

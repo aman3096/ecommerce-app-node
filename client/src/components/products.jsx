@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../constants";
+import { Link } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const Products = () => {
     const [ data, setData ] = useState([]);
+    const [page, setPage] = useState(1);
+    const navigate = useNavigate();
+
+    const openDetailedPage = (e, product)=>{
+        e.preventDefault();
+        const productId = product._id
+        console.log("pid", product);
+        navigate(`/products/${productId}`, { state: product })
+    }
     useEffect(()=>{
-      axios.get(`${BACKEND_URL}/api/v2/products?page=1`)
+      axios.get(`${BACKEND_URL}/api/v2/products?page=${page}`)
         .then(response => {
           console.log("data", response.data);
           setData(response.data.prods);
@@ -36,7 +47,7 @@ const Products = () => {
                           </p>
                       </div>
                       <div className="card__actions">
-                          <a href={`/products/${product._id}`} className="btn">Details</a>
+                          <button onClick={(e)=>openDetailedPage(e, product)} className="btn">Details</button>
                           {/* <% if (isAuthenticated) { %>
                               <%- include('../includes/add-to-cart.ejs', {product: product}) %>
                           <% } %> */}

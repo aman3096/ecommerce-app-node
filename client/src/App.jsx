@@ -1,6 +1,7 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router";
 
+import ProductDetail from './components/product-detail';
 import Products from './components/products';
 import Login from './components/login';
 import Signup from './components/signup';
@@ -16,6 +17,10 @@ function App() {
     {
       path: "products",
       element: <Products/>,
+    },
+    {
+      path: "products/:productId",
+      element: <ProductDetail/>
     },
     {
       path: "/",
