@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const Products = () => {
     const [ data, setData ] = useState([]);
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(5);
     const navigate = useNavigate();
 
     const openDetailedPage = (e, product)=>{

@@ -47,25 +47,26 @@ exports.getAddProductV2 = (req, res, next) => {
 exports.postAddProductV2 =async (req, res, next) => {
     try {
         const title = req.body.title;
-        const image = req.file;
+        // const image = req.file;
+        const image = req.body.image;
         const price = req.body.price;
         const description = req.body.description;
 
-        if(!image) {
-            console.log('No image file received!');
-            const data = {
-                hasError: true,
-                product: { 
-                    title: title,
-                    price: price,
-                    description: description
-                },
-                errorMessage: 'Attached file is not an image',
-                validationErrors: []
-            }
-            return res.status(422).send(data);
-        }
-        const imageUrl = image.path;
+        // if(!image) {
+        //     console.log('No image file received!');
+        //     const data = {
+        //         hasError: true,
+        //         product: { 
+        //             title: title,
+        //             price: price,
+        //             description: description
+        //         },
+        //         errorMessage: 'Attached file is not an image',
+        //         validationErrors: []
+        //     }
+        //     return res.status(422).send(data);
+        // }
+        const imageUrl = image;
         const product = new Product({
                 title: title,
                 price: price,
@@ -77,7 +78,6 @@ exports.postAddProductV2 =async (req, res, next) => {
             .save()
             .then(result => {
             console.log('Created Product');
-            //res.redirect('/admin/products');
             const data = {
                 status: 202,
                 message: "Added Product Successfully"

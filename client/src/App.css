@@ -160,3 +160,7 @@ a:hover, a:focus, a:active {
 label {
   color: black;
 }
+.add-product {
+  color: black;
+  text-align: center;
+}
