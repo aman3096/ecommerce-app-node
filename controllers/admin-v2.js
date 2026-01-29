@@ -100,7 +100,6 @@ exports.getEditProductV2 = (req, res, next) => {
     try {
         const editMode = req.query.edit;
         if (!editMode) {
-            // return res.redirect('/');
             res.data("Not editable");
         }
         const prodId = req.params.productId;
@@ -111,13 +110,6 @@ exports.getEditProductV2 = (req, res, next) => {
                 res.data("No Product found");
 
             }
-            // res.render('admin/edit-product', {
-            //     pageTitle: 'Edit Product',
-            //     path: '/admin/edit-product',
-            //     editing: editMode,
-            //     product: product,
-            //     currentPage: 1,
-            // });
             const data = {
                 pageTitle: 'Edit Product',
                 path: '/admin/edit-product',
@@ -136,5 +128,80 @@ exports.getEditProductV2 = (req, res, next) => {
       const error = new Error(err);
       error.httpStatusCode = 500
       next(error);
+    }
+};
+
+
+exports.postEditProductV2 = (req, res, next) => {
+    try {
+        const prodId = req.body.productId;
+        const updatedTitle = req.body.title;
+        const updatedPrice = req.body.price;
+        const image = req.file
+        const updatedDesc = req.body.description;
+
+        Product.findById(prodId)
+            .then(product => {
+            if(req.user._id.toString() !== product.userId.toString()) {
+                return res.redirect('/');
+            }
+
+            product.title = updatedTitle;
+            product.price = updatedPrice;
+            product.description = updatedDesc;
+            if(image) {
+                fileHelper.deleteFile(product.imageUrl);
+                product.imageUrl = image.path;
+            }
+            
+            return product.save();
+            })
+            .then(result => {
+            console.log('UPDATED PRODUCT!');
+            // res.redirect('/admin/products');
+            res.status(200).send("Product is updated");
+            })
+            .catch(err => {
+                const error = new Error(err);
+                error.httpStatusCode = 500
+                next(error);
+            });
+    } catch(err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    }
+};
+
+exports.deleteProductV2 = (req, res, next) => {
+    try {
+    const prodId = req.params.productId;
+    Product.findById(prodId).then( product => {
+        if(!product) {
+        return next(new Error("Product Not found"));
+        }
+        //  fileHelper.deleteFile(product.imageUrl);
+        Product.deleteOne({_id: prodId, userId: req.user._id}).then(data=>{
+            console.log("DESTROYED PRODUCT")
+        })
+        .catch(err => {
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+        })
+
+    }).then(() => {
+        console.log('DESTROYED PRODUCT');
+        res.status(200).json({ message: 'Success' });
+        })
+        .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+        });
+    } catch(err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     }
 };
