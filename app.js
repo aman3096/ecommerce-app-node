@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
 
-// const csrf = require('csurf');
+const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
 const helmet = require('helmet');
@@ -17,9 +17,6 @@ const compression = require('compression');
 const morgan = require('morgan');
 const RateLimit = require("express-rate-limit");
 const app = express();
-const graphqlHttp = require('express-graphql').graphqlHTTP;
-const graphqlSchema = require('./graphql/schema');
-const graphqlResolver = require('./graphql/resolvers');
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
@@ -72,7 +69,7 @@ app.use('/api', (error, req, res, next) => {
     });
 });
 
-// const csrfProtection = csrf();
+const csrfProtection = csrf();
 
 
 app.set('view engine', 'ejs');
@@ -87,10 +84,6 @@ const store = new MongoDBStore({
   // collection: 'sessions'
 });
 
-app.use('/graphql', graphqlHttp({
-    schema: graphqlSchema,
-    rootValue: graphqlResolver
-}));
 
 app.use(
   session({
@@ -100,7 +93,7 @@ app.use(
     store: store
   })
 );
-// app.use(csrfProtection);
+app.use(csrfProtection);
 app.use(flash());
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'),
@@ -111,11 +104,11 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined', { stream: accessLogStream }))
 
-// app.use((req, res, next) => {
-//   res.locals.isAuthenticated = req?.session.isLoggedIn || true;
-//   res.locals.csrfToken = req.csrfToken();
-//   next();
-// });
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req?.session.isLoggedIn || true;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 
 app.use((req, res, next) => {
   if (!req?.session.user) {

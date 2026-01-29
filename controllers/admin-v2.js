@@ -44,51 +44,97 @@ exports.getAddProductV2 = (req, res, next) => {
   });
 };
 
-exports.postAddProductV2 = (req, res, next) => {
-  const title = req.body.title;
-  const image = req.file;
-  const price = req.body.price;
-  const description = req.body.description;
+exports.postAddProductV2 =async (req, res, next) => {
+    try {
+        const title = req.body.title;
+        const image = req.file;
+        const price = req.body.price;
+        const description = req.body.description;
 
-  console.log('req.body:', req.body);
-  console.log('req.file:', req.file);
-
-  if(!image) {
-    console.log('No image file received!');
-    const data = {
-        hasError: true,
-        product: { 
-            title: title,
-            price: price,
-            description: description
-        },
-        errorMessage: 'Attached file is not an image',
-        validationErrors: []
+        if(!image) {
+            console.log('No image file received!');
+            const data = {
+                hasError: true,
+                product: { 
+                    title: title,
+                    price: price,
+                    description: description
+                },
+                errorMessage: 'Attached file is not an image',
+                validationErrors: []
+            }
+            return res.status(422).send(data);
+        }
+        const imageUrl = image.path;
+        const product = new Product({
+                title: title,
+                price: price,
+                description: description,
+                imageUrl: imageUrl,
+                userId: req.user ? req.user: ObjectId("694d560972869327cc373bbe")
+        });
+        product
+            .save()
+            .then(result => {
+            console.log('Created Product');
+            //res.redirect('/admin/products');
+            const data = {
+                status: 202,
+                message: "Added Product Successfully"
+            }
+            res.status(202).send(data);
+            })
+            .catch(err => {
+            const error = new Error(err);
+            error.httpStatusCode = 500
+            next(error);
+            })
+    } catch(err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
     }
-    return res.status(422).send(data);
-  }
-  const imageUrl = image.path;
-  const product = new Product({
-        title: title,
-        price: price,
-        description: description,
-        imageUrl: imageUrl,
-        userId: req.user ? req.user: ObjectId("694d560972869327cc373bbe")
-  });
-  product
-    .save()
-    .then(result => {
-      console.log('Created Product');
-      //res.redirect('/admin/products');
-      const data = {
-        status: 202,
-        message: "Added Product Successfully"
-      }
-      res.status(202).send(data);
-    })
-    .catch(err => {
+};
+
+exports.getEditProductV2 = (req, res, next) => {
+    try {
+        const editMode = req.query.edit;
+        if (!editMode) {
+            // return res.redirect('/');
+            res.data("Not editable");
+        }
+        const prodId = req.params.productId;
+        Product.findById(prodId)
+            .then(product => {
+            if (!product) {
+                // return res.redirect('/');
+                res.data("No Product found");
+
+            }
+            // res.render('admin/edit-product', {
+            //     pageTitle: 'Edit Product',
+            //     path: '/admin/edit-product',
+            //     editing: editMode,
+            //     product: product,
+            //     currentPage: 1,
+            // });
+            const data = {
+                pageTitle: 'Edit Product',
+                path: '/admin/edit-product',
+                editing: editMode,
+                product: product,
+                currentPage: 1,
+            }
+            res.json(data);
+            })
+            .catch(err => {
+            const error = new Error(err);
+            error.httpStatusCode = 500
+            next(error);
+            });
+    } catch(err) {
       const error = new Error(err);
       error.httpStatusCode = 500
       next(error);
-    })
+    }
 };
