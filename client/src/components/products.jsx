@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const Products = () => {
     const [ data, setData ] = useState([]);
-    const [page, setPage] = useState(5);
+    const [page, setPage] = useState(1);
     const navigate = useNavigate();
 
     const openDetailedPage = (e, product)=>{
@@ -15,7 +15,7 @@ const Products = () => {
         navigate(`/products/${productId}`, { state: product })
     }
     useEffect(()=>{
-      axios.get(`${BACKEND_URL}/api/v2/products?page=${page}`)
+      axios.get(`${BACKEND_URL}/api/v2/admin/products?page=${page}`)
         .then(response => {
           console.log("data", response.data);
           setData(response.data.prods);

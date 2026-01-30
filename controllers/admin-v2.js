@@ -26,7 +26,7 @@ exports.getProductsV2 = (req, res, next) => {
             hasPreviousPage: page > 1,
             lastPage: Math.ceil(totalItems / constants.ITEMS_PER_PAGE)
           }
-          res.send(data);
+          res.json(data);
         })
         .catch(err => {
             const error = new Error(err);
@@ -173,35 +173,21 @@ exports.postEditProductV2 = (req, res, next) => {
     }
 };
 
-exports.deleteProductV2 = (req, res, next) => {
+exports.deleteProductV2 = async (req, res, next) => {
     try {
-    const prodId = req.params.productId;
-    Product.findById(prodId).then( product => {
+        const prodId = req.params.productId;
+        const product = await Product.findById(prodId);
         if(!product) {
-        return next(new Error("Product Not found"));
+            const notFound = { message: "Unable to delete: Product not found"}
+            return res.status(410).json(notFound);
         }
-        //  fileHelper.deleteFile(product.imageUrl);
-        Product.deleteOne({_id: prodId, userId: req.user._id}).then(data=>{
-            console.log("DESTROYED PRODUCT")
-        })
-        .catch(err => {
-            const error = new Error(err);
-            error.httpStatusCode = 500;
-            return next(error);
-        })
 
-    }).then(() => {
+        await Product.deleteOne({_id: prodId})
         console.log('DESTROYED PRODUCT');
-        res.status(200).json({ message: 'Success' });
-        })
-        .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500;
-        return next(error);
-        });
+        res.status(200).json({ message: `Successfully removed product with productId: ${prodId}`});
     } catch(err) {
         const error = new Error(err);
         error.httpStatusCode = 500;
-        return next(error);
-    }
+        return res.send("Unable to delete: Product Id not found");
+    } 
 };

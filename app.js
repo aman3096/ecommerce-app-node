@@ -4,10 +4,10 @@ const fs = require('fs');
 const cors = require("cors");
 
 const express = require('express');
+const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
-
 const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
@@ -35,6 +35,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// const csrfProtection = csrf();
+app.use('/api/v2/admin', adminRoutesV2);
 const fileStorage = multer.diskStorage({
   destination: (req,file, cb) =>{
     cb(null, 'images');
@@ -50,39 +52,22 @@ const fileFilter = (req, file, cb) => {
   }
   cb(null, false);
 }
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
-
-// Multer middleware for file uploads - must come before routes
-app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use("/images", express.static(path.join(__dirname, 'images')));
-
-app.use('/api/', adminRoutesV2);
-
-app.use('/api', (error, req, res, next) => {
-    res.status(error.httpStatusCode || 500).json({
-        error: true,
-        message: error.message || 'Internal Server Error'
-    });
-});
-
-const csrfProtection = csrf();
-
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 app.use(limiter);
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use("/images", express.static(path.join(__dirname, 'images')));
 
-
+app.use(express.json());
 
 const store = new MongoDBStore({
   uri: process.env.MONGODB_URI,
   // collection: 'sessions'
 });
-
 
 app.use(
   session({
@@ -92,7 +77,7 @@ app.use(
     store: store
   })
 );
-app.use(csrfProtection);
+// app.use(csrfProtection);
 app.use(flash());
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'),
