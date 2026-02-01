@@ -6,7 +6,6 @@ const Order = require('../models/order');
 
 const PDFDocument = require("pdfkit");
 const constants = require("../util/constants");
-const { ObjectID } = require('mongodb');
 
 exports.getProducts = (req, res, next) => {
   const page = +req.query.page || 1
@@ -121,7 +120,7 @@ exports.getCart = (req, res, next) => {
 };
 
 exports.postCart = (req, res, next) => {
-  const prodId = ObjectID(req.body.productId);
+  const prodId = req.body.productId;
   Product.findById(prodId)
     .then(product => {
       return req.user.addToCart(product);

@@ -21,7 +21,9 @@ const errorController = require('./controllers/error');
 const User = require('./models/user');
 const adminRoutes = require('./routes/admin');
 const adminRoutesV2 = require('./routes/admin-v2');
+const authRoutesV2 = require('./routes/auth-v2');
 const shopRoutes = require('./routes/shop');
+const shopRoutesV2 = require('./routes/shop-v2');
 const authRoutes = require('./routes/auth');
 
 
@@ -37,6 +39,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // const csrfProtection = csrf();
 app.use('/api/v2/admin', adminRoutesV2);
+// app.use('/api/v2/auth', authRoutesV2);
+app.use('/api/v2/shop', shopRoutesV2);
+
 const fileStorage = multer.diskStorage({
   destination: (req,file, cb) =>{
     cb(null, 'images');

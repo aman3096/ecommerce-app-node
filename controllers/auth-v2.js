@@ -1,0 +1,278 @@
+require('dotenv').config();
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const sendEmail = require('../middleware/send-email')
+const { validationResult } = require('express-validator');
+
+const User = require('../models/user');
+
+exports.getLoginV2 = (req, res, next) => {
+  let message = req.flash('error');
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+  res.status(402).render('auth/login', {
+    path: '/login',
+    pageTitle: 'Login',
+    errorMessage: message,
+    oldInput: {
+      email: "",
+      password: ""
+    },
+    validationErrors: []
+  });
+};
+
+exports.getSignupV2 = (req, res, next) => {
+  let message = req.flash('error');
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+  res.render('auth/signup', {
+    path: '/signup',
+    pageTitle: 'Signup',
+    errorMessage: message,
+    oldInput: {
+      email:  "",
+      password: "",
+      confirmPassword: ""
+    },
+    validationErrors: []
+  });
+};
+
+exports.postLoginV2 = (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  const errors = validationResult(req);
+  if(!errors.isEmpty) {
+    return res.status(422).render('auth/login', {
+      path: '/login',
+      pageTitle:'Login',
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password
+      },
+      validationErrors: errors.message()  
+    })
+  }
+  User.findOne({ email: email })
+    .then(user => {
+      if (!user) {
+         return res.status(422).render('auth/login', {
+          path: '/login',
+          pageTitle: 'Login',
+          errorMessage: 'Invalid credentials',
+          oldInput: {
+            email: email,
+            password: password
+          },
+          validationErrors: []  
+        })
+      }
+      bcrypt
+        .compare(password, user.password)
+        .then(doMatch => {
+          if (doMatch) {
+            req.session.isLoggedIn = true;
+            req.session.user = user;
+            return req.session.save(err => {
+              console.log(err);
+              res.redirect('/');
+            });
+          }
+           return res.status(422).render('auth/login', {
+              path: '/login',
+              pageTitle: 'Login',
+              errorMessage: 'Invalid credentials',
+              oldInput: {
+                email: email,
+                password: password
+              },
+              validationErrors: []  
+            })  
+        })
+        .catch(err => {
+          console.log(err);
+          res.status(422).redirect('/login');
+        });
+    })
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
+};
+
+exports.postSignupV2 = (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
+  const errors = validationResult(req);
+  if(!errors.isEmpty()) {
+    console.log(errors.array());
+    return res.status(422).render('auth/signup', {
+    path: '/signup',
+    pageTitle: 'Signup',
+    errorMessage: errors.array()[0].msg,
+    oldInput: { email: email, password: password, confirmPassword: req.body.confirmPassword },
+    validationErrors: errors.array()
+  })
+  }
+      bcrypt
+        .hash(password, 12)
+        .then(hashedPassword => {
+          const user = new User({
+            email: email,
+            password: hashedPassword,
+            cart: { items: [] }
+          });
+          return user.save();
+        })
+        .then(result => {
+          res.redirect('/login');
+          const html = '<h1>You successfully signed up!</h1>'
+          sendEmail({
+            subject: 'Signup succeeded!',
+            html: html,
+            toEmail: email,
+            fromEmail:'shop@node-complete.com',
+            fromName: 'ATCorp: Reset Your Password <shop@node-complete.com>',
+            text: 'You successfully signed up!'
+          })
+
+        
+    })
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
+};
+
+exports.postLogoutV2 = (req, res, next) => {
+  req.session.destroy(err => {
+    console.log(err);
+    res.redirect('/');
+  });
+};
+
+exports.getResetV2 = (req, res, next) => {
+  let message = req.flash('error');
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+  res.render('auth/reset', {
+    path: '/reset',
+    pageTitle: 'Reset Password',
+    errorMessage: message
+  });
+};
+
+exports.postResetV2 = (req, res, next) => {
+  //built in node js module to generate random bytes
+  crypto.randomBytes(32, (err, buffer) => {
+    if (err) {
+      console.log(err);
+      return res.redirect('/reset');
+    }
+    const token = buffer.toString('hex');
+    User.find({ email: req.body.email })
+      .then(user => {
+        if (!user) {
+          req.flash('error', 'No account with that email found.');
+          return res.redirect('/reset');
+        }
+        user = new User(req.body)
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 3600000;
+        return user.save();
+      })
+      .then(result => {
+        res.redirect('/');
+        html = `<p>You requested a password reset</p>
+                <p>Click this <a href="${process.env.EMAIL_LINK_PRODUCTION}/${token}">link</a> to set a new password.</p>`
+        sendEmail({
+            subject: 'Password Reset',
+            html: html,
+            fromName: 'ATCorp: Reset Your Password <shop@node-complete.com>',
+            fromEmail: 'aman.tandon3096@gmail.com',
+            text: 'You requested a password reset',
+            toEmail: req.body.email,
+            toName: req.body.email
+        })
+      })
+      .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
+  });
+};
+
+exports.getNewPasswordV2 = (req, res, next) => {
+  const token = req.params.token;
+  User.findOne({ resetToken: token, resetTokenExpiration: { $gt: Date.now() } })
+  .then(user=> {
+    let message = req.flash('error');
+    if (message.length > 0) {
+      message = message[0];
+    } else {
+      message = null;
+    }
+    res.render('auth/new-password', {
+      path: '/new-password',
+      pageTitle: 'New Password',
+      errorMessage: message,
+      userId: user._id.toString(),
+      passwordToken: token
+    })
+  }
+
+  ).catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
+}
+
+exports.postNewPasswordV2 = (req, res, next) => {
+  const newPassword = req.body.password;
+  const userId = req.body.userId;
+  const passwordToken = req.body.passwordToken;
+  let resetUser;
+
+  User.findOne({ 
+    resetToken: passwordToken, 
+    resetTokenExpiration: { $gt: Date.now() },
+    _id: userId 
+  })
+  .then(user => {
+    if (!user) {
+      req.flash('error', 'Token expired or invalid.');
+      return res.redirect('/reset');
+    }
+    resetUser = user;
+    return bcrypt.hash(newPassword, 12).then(hashedPassword => {
+      resetUser.password = hashedPassword;
+      resetUser.resetToken = undefined;
+      resetUser.resetTokenExpiration = undefined;
+      return user.save();
+    }).then(result => {
+      res.redirect('/login');
+    });
+  })
+  .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500
+        next(error);
+    });
+}
