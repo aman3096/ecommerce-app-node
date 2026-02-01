@@ -1,9 +1,13 @@
+import Product from "./products";
+import Pagination from "./pagination";
+
 const AdminProducts = () => {
   return (
-    <div>
-      <h2>Admin Products Page</h2>
-    </div>
-    );
+    <>
+      <Product />
+      <Pagination />
+    </>
+  );
 }
 
 export default AdminProducts;
