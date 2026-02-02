@@ -610,4 +610,217 @@ describe('Shop V2 Controllers', () => {
       expect(passedError.httpStatusCode).toBe(500);
     });
   });
+
+  // ==================== getOrdersV2 Tests ====================
+  describe('getOrdersV2', () => {
+    it('should return orders for a specific email', async () => {
+      const mockOrders = [
+        {
+          _id: 'order1',
+          email: 'test@example.com',
+          products: [{ title: 'Product 1', quantity: 2, price: 100 }],
+          user: 'user1',
+          date: new Date('2024-01-01')
+        },
+        {
+          _id: 'order2',
+          email: 'test@example.com',
+          products: [{ title: 'Product 2', quantity: 1, price: 50 }],
+          user: 'user1',
+          date: new Date('2024-01-02')
+        }
+      ];
+
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(mockOrders);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(Order.find).toHaveBeenCalledWith({ email: 'test@example.com' });
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders).toEqual(mockOrders);
+      expect(response.orders).toHaveLength(2);
+      expect(response.pageTitle).toBe('Your Orders');
+      expect(response.path).toBe('/orders');
+    });
+
+    it('should return empty array when user has no orders', async () => {
+      req.body.email = 'newuser@example.com';
+      Order.find.mockResolvedValue([]);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(Order.find).toHaveBeenCalledWith({ email: 'newuser@example.com' });
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders).toEqual([]);
+    });
+
+    it('should return single order for email with one order', async () => {
+      const mockOrder = [
+        {
+          _id: 'order1',
+          email: 'test@example.com',
+          products: [{ title: 'Product 1', quantity: 2, price: 100 }],
+          user: 'user1',
+          date: new Date('2024-01-01')
+        }
+      ];
+
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(mockOrder);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders).toHaveLength(1);
+      expect(response.orders[0]._id).toBe('order1');
+    });
+
+    it('should not trigger orders not found for empty array', async () => {
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue([]);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      // MongoDB find returns empty array, not null, so the if(!orders) check will never trigger
+      expect(res.json).toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should trigger 404 when orders query returns null (edge case)', async () => {
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(null);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      const error = next.mock.calls[0][0];
+      expect(error.message).toBe('Orders not found');
+      expect(error.httpStatusCode).toBe(404);
+    });
+
+    it('should handle database errors', async () => {
+      const error = new Error('DB Connection Error');
+      req.body.email = 'test@example.com';
+      Order.find.mockRejectedValue(error);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      const passedError = next.mock.calls[0][0];
+      expect(passedError.httpStatusCode).toBe(500);
+    });
+
+    it('should work with different email formats', async () => {
+      const mockOrders = [
+        {
+          _id: 'order1',
+          email: 'user.name+test@example.com',
+          products: [],
+          user: 'user1'
+        }
+      ];
+
+      req.body.email = 'user.name+test@example.com';
+      Order.find.mockResolvedValue(mockOrders);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(Order.find).toHaveBeenCalledWith({ email: 'user.name+test@example.com' });
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders).toHaveLength(1);
+    });
+
+    it('should return orders with complete product details', async () => {
+      const mockOrders = [
+        {
+          _id: 'order1',
+          email: 'test@example.com',
+          products: [
+            { productId: 'prod1', title: 'Laptop', quantity: 1, price: 1000 },
+            { productId: 'prod2', title: 'Mouse', quantity: 2, price: 25 }
+          ],
+          user: 'user1',
+          totalAmount: 1050,
+          date: new Date('2024-01-01')
+        }
+      ];
+
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(mockOrders);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders[0].products).toHaveLength(2);
+      expect(response.orders[0].products[0].title).toBe('Laptop');
+      expect(response.orders[0].products[1].title).toBe('Mouse');
+    });
+
+    it('should handle missing email in request body', async () => {
+      req.body = {};
+      Order.find.mockResolvedValue([]);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(Order.find).toHaveBeenCalledWith({ email: undefined });
+      expect(res.json).toHaveBeenCalled();
+    });
+
+    it('should handle null email gracefully', async () => {
+      req.body.email = null;
+      Order.find.mockResolvedValue([]);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(Order.find).toHaveBeenCalledWith({ email: null });
+      expect(res.json).toHaveBeenCalled();
+    });
+
+    it('should return correct response structure', async () => {
+      const mockOrders = [
+        {
+          _id: 'order1',
+          email: 'test@example.com',
+          products: [],
+          user: 'user1'
+        }
+      ];
+
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(mockOrders);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response).toHaveProperty('path', '/orders');
+      expect(response).toHaveProperty('pageTitle', 'Your Orders');
+      expect(response).toHaveProperty('orders');
+    });
+
+    it('should handle multiple orders from same user correctly', async () => {
+      const mockOrders = [
+        { _id: 'order1', email: 'test@example.com', products: [] },
+        { _id: 'order2', email: 'test@example.com', products: [] },
+        { _id: 'order3', email: 'test@example.com', products: [] },
+        { _id: 'order4', email: 'test@example.com', products: [] },
+        { _id: 'order5', email: 'test@example.com', products: [] }
+      ];
+
+      req.body.email = 'test@example.com';
+      Order.find.mockResolvedValue(mockOrders);
+
+      await shopController.getOrdersV2(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.orders).toHaveLength(5);
+    });
+  });
 });

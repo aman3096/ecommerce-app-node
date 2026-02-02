@@ -216,3 +216,25 @@ exports.postCartDeleteProductV2 = async (req, res, next) => {
       return next(error);
     }
 };
+
+exports.getOrdersV2 = async (req, res, next) => {
+    try {
+       const orders = await Order.find({ 'email': req.body.email })
+       if(!orders) {
+            const error = new Error('Orders not found');
+            error.httpStatusCode = 404;
+            return next(error);
+       }
+       const data = {
+            path: '/orders',
+            pageTitle: 'Your Orders',
+            orders: orders
+       }
+
+       res.json(data);
+    } catch (err) {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    }
+};
