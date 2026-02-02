@@ -38,9 +38,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 // const csrfProtection = csrf();
-app.use('/api/v2/admin', adminRoutesV2);
-// app.use('/api/v2/auth', authRoutesV2);
-app.use('/api/v2/shop', shopRoutesV2);
 
 const fileStorage = multer.diskStorage({
   destination: (req,file, cb) =>{
@@ -68,7 +65,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use("/images", express.static(path.join(__dirname, 'images')));
 
 app.use(express.json());
-
+app.use('/api/v2/admin', adminRoutesV2);
+// app.use('/api/v2/auth', authRoutesV2);
+app.use('/api/v2/shop', shopRoutesV2);
 const store = new MongoDBStore({
   uri: process.env.MONGODB_URI,
   // collection: 'sessions'

@@ -111,155 +111,108 @@ exports.getCartV2 = async (req, res, next) => {
     }
 };
 
-// exports.postCartV2 = (req, res, next) => {
-//   const prodId = ObjectID(req.body.productId);
-//   Product.findById(prodId)
-//     .then(product => {
-//       return req.user.addToCart(product);
-//     })
-//     .then(result => {
-//       console.log("created cart");
-//       res.redirect('/cart');
-//     }).catch(err=> {
-//       const error = new Error(err);
-//       error.httpStatusCode = 500;
-//       return next(error);
-//     });
-// };
+exports.postCartV2 = async (req, res, next) => {
+    try {
+        const prodId = req.body.productId;
+        const quantity = req.body.quantity;
+        const email = req.body.email;
+        const product = await Product.findById(prodId);
+        if (!product) {
+            const error = new Error('Product not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        const user = await User.findOne({ email });
+        if (!user) {
+            const error = new Error('User not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        const qty = parseInt(quantity, 10) || 1;
+        const cartProductIndex = user.cart.items.findIndex(item => item.productId.toString() === prodId.toString());
+        if (cartProductIndex >= 0) {
+            user.cart.items[cartProductIndex].quantity = (user.cart.items[cartProductIndex].quantity || 0) + qty;
+        } else {
+            user.cart.items.push({ productId: prodId, quantity: qty });
+        }
+        await user.save();
+        await user.populate('cart.items.productId', 'title price');
+        const cartItems = user.cart.items.map(item => ({
+            productId: item.productId._id,
+            title: item.productId.title,
+            price: item.productId.price,
+            quantity: item.quantity
+        }));
+        const data = {
+                path: '/cart',
+                pageTitle: 'Your Cart',
+                products: cartItems
+        }
+        res.json(data);
+    } catch(err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    }
+};
 
-// exports.postCartDeleteProductV2 = (req, res, next) => {
-//   const prodId = req.body.productId;
-//   req.user
-//     .removeFromCart(prodId)
-//     .then(result => {
-//       res.redirect('/cart');
-//     })
-//     .catch(err => {
-//       const error = new Error(err);
-//       error.httpStatusCode = 500;
-//       return next(error);
-//     });
-// };
+exports.emptyCartV2 = async (req, res, next) => {
+    try {
+        const prodId = req.body.productId;
+        const email = req.body.email;
+        const product = await Product.findById(prodId);
+        if (!product) {
+            const error = new Error('Product not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        const user = await User.findOne({ email });
+        if (!user) {
+            const error = new Error('User not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        user.cart.items = [];
+        await user.save();
+        const data = {
+            status: 200,
+            message: "Cart is Empty now"
+        }
+        res.json(data);
+    } catch(err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    }
+}
 
-// exports.getCheckoutV2 = (req, res, next) => {
-//   req.user
-//     .populate('cart.items.productId')
-//     .then(user => {
-//       const products = user.cart.items;
-//       let total = 0;
-//       products.forEach(product=>{
-//         total+= product.quantity * product.productId.price
-//       })
-//       res.render('shop/checkout', {
-//         path: '/checkout',
-//         pageTitle: 'Checkout',
-//         products: products,
-//         totalSum: total 
-//       });
-//     })
-//     .catch(err => {
-//       const error = new Error(err);
-//       error.httpStatusCode = 500;
-//       return next(error);
-//     });
-// }
-
-// exports.postOrderV2 = (req, res, next) => {
-//   req.user
-//     .populate('cart.items.productId')
-//     .then(user => {
-//       const products = user.cart.items.map(i => {
-//         return { quantity: i.quantity, product: { ...i.productId._doc } };
-//       });
-//       const order = new Order({
-//         user: {
-//           email: req.user.email,
-//           userId: req.user
-//         },
-//         products: products
-//       });
-//       return order.save();
-//     })
-//     .then(result => {
-//       return req.user.clearCart();
-//     })
-//     .then(() => {
-//       res.redirect('/orders');
-//     })
-//     .catch(err => {
-//         const error = new Error(err);
-//         error.httpStatusCode = 500;
-//         return next(error);
-//     });
-// };
-
-// exports.getOrdersV2 = (req, res, next) => {
-//   Order.find({ 'user.userId': req.user._id })
-//     .then(orders => {
-//       res.render('shop/orders', {
-//         path: '/orders',
-//         pageTitle: 'Your Orders',
-//         orders: orders
-//       });
-//     })
-//     .catch(err => {
-//       const error = new Error(err);
-//       error.httpStatusCode = 500;
-//       return next(error);
-//     });
-// };
-
-// exports.getInvoicesV2 = (req, res, next) => {
-//     const orderId = req.params.orderId;
-//   // Validate orderId to prevent path traversal
-//   if (!orderId || !/^[a-zA-Z0-9]+$/.test(orderId)) {
-//     return next(new Error('Invalid order ID'));
-//   }
-//   const invoiceName = "invoice-" + orderId + ".pdf";
-//   const invoicePath = path.join('data', 'invoices', invoiceName);
-//   Order.findById(orderId).then( order => {
-//     if(!order) {
-//       return next(new Error('No order found.'))
-//     }
-//     if(order.user.userId.toString() !== req.user._id.toString()) {
-//       return new Error('Unauthorized');
-//     }
-//     //     fs.readFile(invoicePath, (err, data)=>{
-//     //     if(err){
-//     //       return next(err);
-//     //     }
-//     //     res.setHeader("Content-Type", "application/pdf")
-//     //     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
-//     //     res.send(data);
-//     // });
-//     //recommended way for bigger files - streaming 
-//     // const file = fs.createReadStream(invoicePath);
-//     res.setHeader("Content-Type", "application/pdf")
-//     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
-
-//     const pdfDocument = new PDFDocument();
-//     pdfDocument.pipe(fs.createWriteStream(invoicePath));
-//     pdfDocument.pipe(res);
-//     pdfDocument.text("Hello files");
-
-//     pdfDocument.fontSize(26).text('Invoice', {
-//       underline: true
-//     })
-
-//     pdfDocument.text("---------------------")
-//     let totalPrice = 0;
-//     order.products.forEach(product => {
-//       totalPrice += (product.quantity * product.product.price)
-//       pdfDocument.text(product.product.title + ' - ' + product.quantity + ' x' + '$' + product.product.price)
-//     })
-//     pdfDocument.text(`Total Price: ${totalPrice}`)
-//     pdfDocument.end();
-
-
-//   }).catch(err => {
-//       const error = new Error(err);
-//       error.httpStatusCode = 500;
-//       return next(error);
-//   });
-
-// }
+exports.postCartDeleteProductV2 = async (req, res, next) => {
+    try {
+        const prodId = req.body.productId;
+        const email = req.body.email;
+        const product = await Product.findById(prodId);
+        if (!product) {
+            const error = new Error('Product not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        const user = await User.findOne({ email });
+        if (!user) {
+            const error = new Error('User not found');
+            error.httpStatusCode = 404;
+            return next(error);
+        }
+        user.cart.items = user.cart.items.filter(item =>
+            item.productId.toString() !== prodId.toString()
+        )
+        await user.save();
+        const data = {
+            message:"Cart Item Removed Successfully"
+        }
+        res.json(data);
+    } catch(err) {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    }
+};

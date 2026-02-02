@@ -15,9 +15,11 @@ router.get('/products/:productId', shopControllerV2.getProductV2);
 
 router.get('/cart/:userId', shopControllerV2.getCartV2);
 
-// router.post('/cart', isAuth, shopController.postCartV2);
+router.post('/cart', shopControllerV2.postCartV2);
 
-// router.post('/cart-delete-item', isAuth, shopController.postCartDeleteProductV2);
+router.post('/empty-cart', shopControllerV2.emptyCartV2);
+
+router.post('/cart-delete-item', shopControllerV2.postCartDeleteProductV2);
 
 // router.get('/checkout', isAuth, shopController.getCheckoutV2);
 
